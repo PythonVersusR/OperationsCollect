@@ -31,13 +31,16 @@ Becareful, you need to follow a similar pattern than the one obtained with getwd
 You need to change your root folder location once, if needed; but you do not use ch.dir() again for every file you read. If the file is in a folder inside your root folder, you simply write:
 
 ```{r, eval=FALSE}
+library(rio)
 folder="data"
 fileName="anes_timeseries_2012.sav"
 fileToRead=file.path(folder,fileName)
-dataSpss=read_sav(fileToRead)
+fileToRead
 ```
 
 The object _fileToRead_ has the right name of the path, because **file.path** creates a path using the elements between the parenthesis. Notice that you can write several folders, and file.path creates the right separator.
+
+
 
 ____
 
@@ -46,19 +49,21 @@ ____
 
 ## Collecting data from proprietary software
 
-Let's start with data from SPSS and STATA, very common in public policy schools. To work with these kind of files, we will use the package **haven**:
+Let's start with data from SPSS and STATA, very common in public policy schools. To work with these kind of files, we will use the package **rio**:
 ```{r, eval=FALSE}
 #install.packages("haven")
-library(haven)
+library(rio)
 ```
 Let me open the SPSS file first, these data come from the American National Election Studies survey (ANES):
 ```{r, eval=FALSE}
 folder="data"
 fileName="anes_timeseries_2012.sav"
 fileToRead=file.path(folder,fileName)
-dataSpss=read_sav(fileToRead)
+dataSpss=import(fileToRead)
 ```
-So far, we have the data but it is not a data frame, but a tibble, a similar structure created by *haven*. This is a rather big file, so let me select some variables ("libcpre_self","libcpo_self"), a couple of questions pre and post elections asking respondents to place themselves on a seven point scale ranging from ‘extremely liberal’ to ‘extremely conservative’) and create a data frame with them: 
+
+
+This is a rather big file, so let me select some variables ("libcpre_self","libcpo_self"), a couple of questions pre and post elections asking respondents to place themselves on a seven point scale ranging from ‘extremely liberal’ to ‘extremely conservative’) and create a data frame with them: 
 ```{r, eval=FALSE}
 varsOfInterest=c("libcpre_self","libcpo_self")
 dataSpssSub=as.data.frame(dataSpss)[varsOfInterest]
@@ -69,9 +74,15 @@ A similar process is followed to get a STATA file:
 ```{r, eval=FALSE}
 fileName="anes_timeseries_2012.dta"
 fileToRead=file.path(folder,fileName)
-dataStata=read_dta(fileToRead)
+dataStata=import(fileToRead)
 dataStataSub=as.data.frame(dataStata)[varsOfInterest]
 head(dataStataSub)
+```
+
+```{r, eval=FALSE}
+fileName="HDI.xlsx"
+fileToRead=file.path(folder,fileName)
+dataExcel=import(fileToRead)
 ```
 
 [Go to page beginning](#beginning)
@@ -85,19 +96,14 @@ head(dataStataSub)
 Let me assume you have collected some data using Google Forms. The answers to your forms are saved in an spreadsheet, which you should publish as a CSV file. Then, I can read it like this:
 ```{r, eval=FALSE}
 
-require(RCurl)
+
 # obtained from google docs:
-link='https://docs.google.com/spreadsheets/d/1_zkjabqNMmetGvn77L2UTZ26QsKbLo4WNIh0s0fWnOQ/pub?output=csv'
+link='https://docs.google.com/spreadsheets/d/e/2PACX-1vRCHCDPx4NmYA5phchO2rZhZSPvHZjkF08E11i3gsjHCy4zVWc12IRGg8rMzDgpvIHCZQqGeqPFhWa6/pub?gid=692075096&single=true&output=csv'
 
-# getting info
-myCsv <- getURL(link)
-# to change column names:
-namesOfCols=c('timeStamp','name','sex','age','bornIn','workingStatus')
+fromGoogle = read.csv(link)
 
-# parsing as csv
-myData=read.csv(textConnection(myCsv),col.names=namesOfCols)
 
-head(myData)
+head(fromGoogle)
 
 ```
 
@@ -113,9 +119,19 @@ There are organizations, public and private, that have an open data policy that 
 ```{r, eval=FALSE}
 #install.packages("jsonlite")
 library(jsonlite) 
-endPoint="https://data.seattle.gov/resource/pu5n-trf4.json" 
+endPoint="https://data.seattle.gov/resource/kzjm-xkqj.json" 
 data911 = fromJSON(endPoint)
 head(data911)
+
+
+## Install the required package with:
+## install.packages("RSocrata")
+
+library("RSocrata")
+
+df <- read.socrata(
+  "https://data.seattle.gov/resource/kzjm-xkqj.csv?%24limit=2000"
+)
 ```
 [Go to page beginning](#beginning)
 
@@ -138,7 +154,7 @@ link = "List_of_freedom_indices"
 
 # Data
 wikiLinkContents = getURL(paste0(wiki,link)) 
-wikiTables = readHTMLTable(wikiLinkContents,
+wikiTables = readHTMLTable(wikiLinkContents,header = T,
                            stringsAsFactors=FALSE)
 ```
 Let's see what we have:
